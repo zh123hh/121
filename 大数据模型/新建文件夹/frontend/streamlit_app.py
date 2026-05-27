@@ -23,7 +23,7 @@ if "messages" not in st.session_state:
 if "model_provider" not in st.session_state:
     st.session_state.model_provider = "deepseek"
 if "model_name" not in st.session_state:
-    st.session_state.model_name = "deepseek-chat"
+    st.session_state.model_name = "deepseek-v4-pro"
 if "temperature" not in st.session_state:
     st.session_state.temperature = 0.7
 if "system_message" not in st.session_state:
@@ -107,14 +107,14 @@ with st.sidebar:
     
     # 模型名称
     model_options = {
-        "deepseek": ["deepseek-chat", "deepseek-r1"]
+        "deepseek": ["deepseek-v4-pro", "deepseek-v4-flash"]
     }
     
     if selected_provider != current_provider_display:
         st.session_state.model_provider = provider_map[selected_provider]
         st.session_state.model_name = model_options[provider_map[selected_provider]][0]
     
-    available_models = model_options.get(st.session_state.model_provider, ["deepseek-chat"])
+    available_models = model_options.get(st.session_state.model_provider, ["deepseek-v4-pro"])
     if st.session_state.model_name not in available_models:
         st.session_state.model_name = available_models[0]
     

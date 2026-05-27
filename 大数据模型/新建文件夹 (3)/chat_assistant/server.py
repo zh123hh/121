@@ -31,8 +31,8 @@ class ChatRequest(BaseModel):
         default="你是谷雨，一个可爱的AI助手。请用友好、亲切的语气回答问题。",
         description="系统提示消息"
     )
-    model_provider: str = Field(default="openai", description="模型提供商")
-    model_name: str = Field(default="gpt-4o-mini", description="模型名称")
+    model_provider: str = Field(default="deepseek", description="模型提供商")
+    model_name: str = Field(default="deepseek-chat", description="模型名称")
     temperature: float = Field(default=0.7, ge=0, le=2, description="温度参数")
     chat_history: list = Field(default=[], description="对话历史")
 
@@ -50,8 +50,8 @@ class StreamChatRequest(BaseModel):
         default="你是谷雨，一个可爱的AI助手。请用友好、亲切的语气回答问题。",
         description="系统提示消息"
     )
-    model_provider: str = Field(default="openai", description="模型提供商")
-    model_name: str = Field(default="gpt-4o-mini", description="模型名称")
+    model_provider: str = Field(default="deepseek", description="模型提供商")
+    model_name: str = Field(default="deepseek-chat", description="模型名称")
 
 
 class TranslateRequest(BaseModel):

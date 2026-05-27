@@ -7,6 +7,10 @@ import asyncio
 import sys
 import io
 
+# 加载环境变量
+from dotenv import load_dotenv
+load_dotenv()
+
 # 设置标准输出为UTF-8编码
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 

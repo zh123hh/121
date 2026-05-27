@@ -38,8 +38,8 @@ APP_PORT = int(os.getenv("APP_PORT", "8000"))
 class ChatRequest(BaseModel):
     message: str = Field(..., description="用户消息")
     system_message: str = Field(default="你是一个 helpful 的AI助手。", description="系统提示")
-    model_provider: str = Field(default="openai", description="模型提供商")
-    model_name: str = Field(default="gpt-4o-mini", description="模型名称")
+    model_provider: str = Field(default="deepseek", description="模型提供商")
+    model_name: str = Field(default="deepseek-chat", description="模型名称")
     temperature: float = Field(default=0.7, ge=0, le=2, description="温度参数")
 
 

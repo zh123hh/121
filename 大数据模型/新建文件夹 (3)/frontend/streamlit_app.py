@@ -174,6 +174,29 @@ st.markdown("""
         opacity: 1 !important;
     }
     
+    /* 侧边栏按钮样式 - 浅色背景 */
+    [data-testid="stSidebar"] .stButton>button {
+        background: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #334155 !important;
+        border-radius: 12px !important;
+        padding: 12px 20px !important;
+        font-weight: 500 !important;
+        transition: all 0.2s ease !important;
+        box-shadow: none !important;
+    }
+    
+    [data-testid="stSidebar"] .stButton>button:hover {
+        background: #f1f5f9 !important;
+        border-color: #cbd5e0 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+        transform: none !important;
+    }
+    
+    [data-testid="stSidebar"] .stButton>button:active {
+        transform: scale(0.98) !important;
+    }
+    
     [data-testid="stSidebar"] .stSelectbox>div>div>div {
         color: #2d3748 !important;
         opacity: 1 !important;
@@ -380,7 +403,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 配置
-API_BASE_URL = st.secrets.get("API_BASE_URL", "http://localhost:8000")
+API_BASE_URL = st.secrets.get("API_BASE_URL", "http://localhost:8002")
 
 # 初始化会话状态
 if "messages" not in st.session_state:
@@ -390,10 +413,10 @@ if "session_id" not in st.session_state:
     st.session_state.session_id = f"session_{int(time.time())}"
 
 if "model_provider" not in st.session_state:
-    st.session_state.model_provider = "openai"
+    st.session_state.model_provider = "deepseek"
 
 if "model_name" not in st.session_state:
-    st.session_state.model_name = "gpt-4o-mini"
+    st.session_state.model_name = "deepseek-chat"
 
 if "temperature" not in st.session_state:
     st.session_state.temperature = 0.7
@@ -495,53 +518,57 @@ with st.sidebar:
     # 模型选择
     st.subheader("⚙️ 模型配置", divider="gray")
     
-    models = get_available_models()
+    # 使用简单的文本选项，避免图标可能导致的问题
+    provider_options = ["OpenAI", "Anthropic", "DeepSeek"]
     
-    if models:
-        providers = [p["provider"] for p in models]
-        provider_icons = {
-            "openai": "🔵",
-            "anthropic": "🟠", 
-            "deepseek": "🟢"
-        }
-        provider_names = {
-            "openai": "OpenAI",
-            "anthropic": "Anthropic",
-            "deepseek": "DeepSeek"
-        }
-        
-        st.session_state.model_provider = st.selectbox(
-            "模型提供商",
-            providers,
-            index=providers.index(st.session_state.model_provider) if st.session_state.model_provider in providers else 0,
-            format_func=lambda x: f"{provider_icons.get(x, '🔹')} {provider_names.get(x, x)}"
-        )
-        
-        current_provider_info = next((p for p in models if p["provider"] == st.session_state.model_provider), {})
-        current_provider_models = current_provider_info.get("models", [])
-        
-        if current_provider_models:
-            st.session_state.model_name = st.selectbox(
-                "模型名称",
-                current_provider_models,
-                index=current_provider_models.index(st.session_state.model_name) if st.session_state.model_name in current_provider_models else 0
-            )
-    else:
-        st.session_state.model_provider = st.selectbox(
-            "模型提供商", 
-            ["openai", "anthropic", "deepseek"], 
-            index=0,
-            format_func=lambda x: {
-                "openai": "🔵 OpenAI",
-                "anthropic": "🟠 Anthropic",
-                "deepseek": "🟢 DeepSeek"
-            }[x]
-        )
-        
-        if st.session_state.model_provider == "deepseek":
-            st.session_state.model_name = st.selectbox("模型名称", ["deepseek-chat", "deepseek-r1-chat"], index=0)
-        else:
-            st.session_state.model_name = st.selectbox("模型名称", ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"], index=0)
+    # 创建映射
+    display_to_provider = {
+        "OpenAI": "openai",
+        "Anthropic": "anthropic",
+        "DeepSeek": "deepseek"
+    }
+    
+    # 获取当前provider对应的显示名称
+    provider_to_display = {v: k for k, v in display_to_provider.items()}
+    current_display = provider_to_display.get(st.session_state.model_provider, "DeepSeek")
+    
+    # 确保当前显示值在选项列表中
+    if current_display not in provider_options:
+        current_display = "DeepSeek"
+    
+    # 获取默认索引
+    default_idx = provider_options.index(current_display)
+    
+    # 显示下拉框
+    selected_display = st.selectbox(
+        "模型提供商",
+        provider_options,
+        index=default_idx,
+        key="provider_select_2024"
+    )
+    
+    # 映射回实际provider值
+    st.session_state.model_provider = display_to_provider[selected_display]
+    
+    # 模型名称选择
+    model_options = {
+        "deepseek": ["deepseek-chat", "deepseek-r1-chat"],
+        "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
+        "openai": ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"]
+    }
+    
+    current_models = model_options.get(st.session_state.model_provider, ["gpt-4o-mini"])
+    
+    # 确保默认模型有效
+    if st.session_state.model_name not in current_models:
+        st.session_state.model_name = current_models[0]
+    
+    st.session_state.model_name = st.selectbox(
+        "模型名称",
+        current_models,
+        index=current_models.index(st.session_state.model_name),
+        key="model_select"
+    )
     
     # 参数配置
     st.subheader("🎛️ 生成参数", divider="gray")
@@ -570,34 +597,60 @@ with st.sidebar:
         placeholder="输入自定义系统提示..."
     )
     
+    # 自定义按钮样式 - 浅色背景（针对侧边栏所有按钮）
+    st.markdown("""
+        <style>
+        /* 侧边栏中的所有按钮 */
+        section[data-testid="stSidebar"] button {
+            background-color: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            color: #334155 !important;
+            border-radius: 12px !important;
+            padding: 12px 20px !important;
+            font-weight: 500 !important;
+            transition: all 0.2s ease !important;
+        }
+        section[data-testid="stSidebar"] button:hover {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e0 !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        section[data-testid="stSidebar"] button:active {
+            transform: scale(0.98);
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
     # 操作按钮
     st.subheader("🔧 快捷操作", divider="gray")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("🗑️ 清空", use_container_width=True):
+        if st.button("🗑️ 清空对话", use_container_width=True, key="clear_btn"):
             st.session_state.messages = []
             st.session_state.session_id = f"session_{int(time.time())}"
-            st.success("已清空")
+            st.session_state.chat_history = []
+            st.success("对话已清空")
     
     with col2:
-        if st.button("🔄 刷新", use_container_width=True):
+        if st.button("🔄 刷新页面", use_container_width=True, key="refresh_btn"):
             st.rerun()
     
     # 快捷功能
     st.subheader("⚡ 快捷指令", divider="gray")
     
     quick_prompts = [
-        ("✍️ 写邮件", "帮我写一封商务邮件"),
-        ("📝 写总结", "帮我总结文本内容"),
-        ("🌍 翻译", "翻译成英文"),
-        ("💡 创意写作", "构思一个故事开头"),
+        ("✍️ 写邮件", "帮我写一封专业的商务邮件"),
+        ("📝 写总结", "帮我总结以下文本内容，提取关键要点"),
+        ("🌍 翻译", "将以下内容翻译成英文，保持原意"),
+        ("💡 创意写作", "帮我构思一个有趣的故事开头"),
     ]
     
     for label, prompt in quick_prompts:
-        if st.button(label, use_container_width=True):
+        if st.button(label, use_container_width=True, key=f"quick_{label}"):
             st.session_state.quick_prompt = prompt
+            st.session_state.user_input = prompt
             st.rerun()
 
 
@@ -624,16 +677,62 @@ with chat_container:
     
     # 显示欢迎消息
     if not st.session_state.messages:
-        st.markdown("""
-            <div class="welcome-card">
-                <div style="font-size: 48px; margin-bottom: 15px;">🌱</div>
-                <div style="font-weight: 700; font-size: 24px; margin-bottom: 10px; color: #0f0f0f;">你好，我是谷雨</div>
-                <div style="font-size: 15px; color: #3d4a5c; line-height: 1.7;">
-                    我可以帮助你写作、翻译、编程、问答等<br>
-                    在左侧配置模型，然后开始对话吧！
+        # 尝试连接API获取欢迎消息
+        api_connected = False
+        welcome_response = None
+        
+        try:
+            # 测试API连接
+            response = requests.get(f"{API_BASE_URL}/health", timeout=5)
+            if response.status_code == 200:
+                # API可用，获取欢迎消息
+                welcome_data = {
+                    "message": "你好，做个自我介绍",
+                    "model_provider": st.session_state.model_provider,
+                    "model_name": st.session_state.model_name,
+                    "system_message": "你是谷雨，一个可爱的AI助手。请用友好、亲切的语气回答问题。"
+                }
+                response = requests.post(f"{API_BASE_URL}/chat", json=welcome_data, timeout=15)
+                if response.status_code == 200:
+                    result = response.json()
+                    welcome_response = result.get("response", "")
+                    api_connected = True
+        except Exception as e:
+            pass
+        
+        if api_connected and welcome_response:
+            # API连接成功，显示真实欢迎消息
+            st.markdown(f"""
+                <div class="welcome-card">
+                    <div style="font-size: 48px; margin-bottom: 15px;">🌱</div>
+                    <div style="font-weight: 700; font-size: 24px; margin-bottom: 10px; color: #0f0f0f;">谷雨</div>
+                    <div style="font-size: 15px; color: #3d4a5c; line-height: 1.7;">
+                        {welcome_response.replace('\n', '<br>')}
+                    </div>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.06);">
+                        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: #dcfce7; color: #166534; border-radius: 20px; font-size: 12px;">
+                            ✅ API已连接
+                        </span>
+                    </div>
                 </div>
-            </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
+        else:
+            # API连接失败，显示演示模式
+            st.markdown("""
+                <div class="welcome-card">
+                    <div style="font-size: 48px; margin-bottom: 15px;">🌱</div>
+                    <div style="font-weight: 700; font-size: 24px; margin-bottom: 10px; color: #0f0f0f;">你好，我是谷雨</div>
+                    <div style="font-size: 15px; color: #3d4a5c; line-height: 1.7;">
+                        我可以帮助你写作、翻译、编程、问答等<br>
+                        在左侧配置模型，然后开始对话吧！
+                    </div>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.06);">
+                        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: #fef3c7; color: #92400e; border-radius: 20px; font-size: 12px;">
+                            ⚠️ 演示模式
+                        </span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
     
     # 显示对话历史
     for i, message in enumerate(st.session_state.messages):

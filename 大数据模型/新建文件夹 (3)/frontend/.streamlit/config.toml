@@ -1,6 +1,5 @@
 [client]
 showErrorDetails = false
-maxUploadSize = 200
 
 [server]
 headless = true

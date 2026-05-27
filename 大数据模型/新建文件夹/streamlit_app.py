@@ -27,7 +27,7 @@ if "model_name" not in st.session_state:
 if "temperature" not in st.session_state:
     st.session_state.temperature = 0.7
 if "system_message" not in st.session_state:
-    st.session_state.system_message = "你是一个友好的AI助手，请用中文回答问题。"
+    st.session_state.system_message = "你叫谷雨，是一个友好的AI助手。你可以回答问题、提供建议、进行对话交流等。请用中文回答问题。"
 if "quick_prompt" not in st.session_state:
     st.session_state.quick_prompt = ""
 if "memory" not in st.session_state:
@@ -61,6 +61,7 @@ def get_llm(model_provider="deepseek", model_name="deepseek-chat", temperature=0
 def stream_chat(prompt):
     """流式对话"""
     try:
+        import datetime
         llm = get_llm(
             st.session_state.model_provider,
             st.session_state.model_name,
@@ -69,8 +70,17 @@ def stream_chat(prompt):
         
         chat_history = st.session_state.memory.load_memory_variables({})["history"]
         
+        # 获取当前日期和星期
+        today = datetime.datetime.now()
+        week_days = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+        week_day = week_days[today.weekday()]
+        current_date = today.strftime("%Y年%m月%d日")
+        
+        # 在系统提示中添加当前日期信息
+        system_prompt = f"{st.session_state.system_message} 当前日期是{current_date}，{week_day}。"
+        
         messages = [
-            {"role": "system", "content": st.session_state.system_message}
+            {"role": "system", "content": system_prompt}
         ]
         for i, m in enumerate(chat_history):
             role = "user" if i % 2 == 0 else "assistant"

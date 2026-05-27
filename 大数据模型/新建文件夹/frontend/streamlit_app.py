@@ -1,12 +1,21 @@
+"""
+谷雨 AI 助手 - 独立版
+直接使用LangChain调用LLM，无需后端服务
+"""
 import streamlit as st
-import requests
 from dotenv import load_dotenv
+import os
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.output_parsers import StrOutputParser
+from langchain_classic.memory import ConversationBufferMemory
 
 # 加载环境变量
 load_dotenv()
 
 # 配置
-API_BASE_URL = st.secrets.get("API_BASE_URL", "http://localhost:8000")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "EMPTY")
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
 
 # 初始化会话状态
 if "messages" not in st.session_state:
@@ -17,12 +26,12 @@ if "model_name" not in st.session_state:
     st.session_state.model_name = "deepseek-chat"
 if "temperature" not in st.session_state:
     st.session_state.temperature = 0.7
-if "use_streaming" not in st.session_state:
-    st.session_state.use_streaming = True
 if "system_message" not in st.session_state:
     st.session_state.system_message = "你是一个友好的AI助手，请用中文回答问题。"
 if "quick_prompt" not in st.session_state:
     st.session_state.quick_prompt = ""
+if "memory" not in st.session_state:
+    st.session_state.memory = ConversationBufferMemory(return_messages=True)
 
 # 页面配置
 st.set_page_config(
@@ -32,37 +41,49 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# API调用函数
-def call_api(endpoint, data):
-    try:
-        response = requests.post(f"{API_BASE_URL}{endpoint}", json=data, timeout=30)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return {"error": f"API错误: {response.status_code}"}
-    except Exception as e:
-        return {"error": str(e)}
 
-# 流式API调用
-def stream_chat(prompt):
-    try:
-        response = requests.post(
-            f"{API_BASE_URL}/chat/stream",
-            json={
-                "message": prompt,
-                "system_message": st.session_state.system_message,
-                "model_provider": st.session_state.model_provider,
-                "model_name": st.session_state.model_name,
-                "temperature": st.session_state.temperature,
-            },
-            stream=True,
-            timeout=60
+def get_llm(model_provider="deepseek", model_name="deepseek-chat", temperature=0.7):
+    """获取LLM实例"""
+    if model_provider == "deepseek":
+        return ChatOpenAI(
+            model=model_name,
+            temperature=temperature,
+            api_key=DEEPSEEK_API_KEY,
+            base_url=DEEPSEEK_BASE_URL,
         )
-        for chunk in response.iter_content(chunk_size=1024):
-            if chunk:
-                yield chunk.decode("utf-8")
+    else:
+        return ChatOpenAI(
+            model=model_name,
+            temperature=temperature,
+        )
+
+
+def stream_chat(prompt):
+    """流式对话"""
+    try:
+        llm = get_llm(
+            st.session_state.model_provider,
+            st.session_state.model_name,
+            st.session_state.temperature
+        )
+        
+        chat_history = st.session_state.memory.load_memory_variables({})["history"]
+        
+        messages = [
+            {"role": "system", "content": st.session_state.system_message}
+        ]
+        for i, m in enumerate(chat_history):
+            role = "user" if i % 2 == 0 else "assistant"
+            content = m.content if hasattr(m, 'content') else str(m)
+            messages.append({"role": role, "content": content})
+        messages.append({"role": "user", "content": prompt})
+        
+        for chunk in llm.stream(messages):
+            if chunk.content:
+                yield chunk.content
     except Exception as e:
         yield f"错误: {str(e)}"
+
 
 # 侧边栏
 with st.sidebar:
@@ -73,9 +94,9 @@ with st.sidebar:
     st.subheader("模型配置")
     
     # 模型提供商
-    provider_options = ["OpenAI", "Anthropic", "DeepSeek"]
-    provider_map = {"OpenAI": "openai", "Anthropic": "anthropic", "DeepSeek": "deepseek"}
-    reverse_provider_map = {"openai": "OpenAI", "anthropic": "Anthropic", "deepseek": "DeepSeek"}
+    provider_options = ["DeepSeek"]
+    provider_map = {"DeepSeek": "deepseek"}
+    reverse_provider_map = {"deepseek": "DeepSeek"}
     
     current_provider_display = reverse_provider_map.get(st.session_state.model_provider, "DeepSeek")
     selected_provider = st.selectbox(
@@ -83,16 +104,15 @@ with st.sidebar:
         provider_options,
         index=provider_options.index(current_provider_display)
     )
-    if selected_provider != current_provider_display:
-        st.session_state.model_provider = provider_map[selected_provider]
-        st.session_state.model_name = model_options[provider_map[selected_provider]][0]
     
     # 模型名称
     model_options = {
-        "openai": ["gpt-4o-mini", "gpt-4o"],
-        "anthropic": ["claude-3-opus", "claude-3-sonnet"],
         "deepseek": ["deepseek-chat", "deepseek-r1"]
     }
+    
+    if selected_provider != current_provider_display:
+        st.session_state.model_provider = provider_map[selected_provider]
+        st.session_state.model_name = model_options[provider_map[selected_provider]][0]
     
     available_models = model_options.get(st.session_state.model_provider, ["deepseek-chat"])
     if st.session_state.model_name not in available_models:
@@ -110,7 +130,6 @@ with st.sidebar:
     # 生成参数
     st.subheader("生成参数")
     st.session_state.temperature = st.slider("温度参数", 0.0, 1.0, 0.7, 0.1)
-    st.session_state.use_streaming = st.toggle("流式输出", value=True)
     
     st.divider()
     
@@ -133,6 +152,7 @@ with st.sidebar:
     with col1:
         if st.button("清空对话"):
             st.session_state.messages = []
+            st.session_state.memory = ConversationBufferMemory(return_messages=True)
     
     with col2:
         if st.button("刷新页面"):
@@ -155,6 +175,7 @@ with st.sidebar:
     if st.button("💡 创意写作"):
         st.session_state.quick_prompt = "帮我构思一个有趣的故事开头"
 
+
 # 主内容区
 st.title("谷雨 AI 助手")
 st.caption("基于 LangChain 构建的智能对话系统")
@@ -173,11 +194,11 @@ for message in st.session_state.messages:
             st.markdown(message["content"])
 
 # 用户输入
-initial_value = st.session_state.quick_prompt if st.session_state.quick_prompt else ""
-prompt = st.chat_input("输入消息，与谷雨对话...", value=initial_value)
+prompt = st.chat_input("输入消息，与谷雨对话...")
 
-# 清除quick_prompt
+# 如果有快捷指令，使用快捷指令
 if st.session_state.quick_prompt:
+    prompt = st.session_state.quick_prompt
     st.session_state.quick_prompt = ""
 
 # 处理用户输入
@@ -187,31 +208,22 @@ if prompt:
     
     # AI响应
     with st.chat_message("assistant"):
-        if st.session_state.use_streaming:
-            full_response = ""
-            message_placeholder = st.empty()
-            
-            with st.spinner("思考中..."):
-                for chunk in stream_chat(prompt):
-                    full_response += chunk
-                    message_placeholder.markdown(full_response + "▌")
-            
-            message_placeholder.markdown(full_response)
-        else:
-            with st.spinner("思考中..."):
-                result = call_api("/chat", data={
-                    "message": prompt,
-                    "system_message": st.session_state.system_message,
-                    "model_provider": st.session_state.model_provider,
-                    "model_name": st.session_state.model_name,
-                    "temperature": st.session_state.temperature,
-                })
-                full_response = result.get("response", "发生错误")
-                st.markdown(full_response)
+        full_response = ""
+        message_placeholder = st.empty()
+        
+        with st.spinner("思考中..."):
+            for chunk in stream_chat(prompt):
+                full_response += chunk
+                message_placeholder.markdown(full_response + "▌")
+        
+        message_placeholder.markdown(full_response)
+        
+        # 保存到记忆
+        st.session_state.memory.save_context({"input": prompt}, {"output": full_response})
         
         # 添加AI响应到历史
         st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 # 页脚
 st.divider()
-st.markdown("🌱 谷雨 · Powered by LangChain · LangServe · Streamlit", unsafe_allow_html=False)
+st.markdown("🌱 谷雨 · Powered by LangChain · DeepSeek")

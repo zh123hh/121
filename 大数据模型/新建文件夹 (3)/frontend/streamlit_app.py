@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-import os
 from dotenv import load_dotenv
 
 # 加载环境变量
@@ -22,6 +21,8 @@ if "use_streaming" not in st.session_state:
     st.session_state.use_streaming = True
 if "system_message" not in st.session_state:
     st.session_state.system_message = "你是一个友好的AI助手，请用中文回答问题。"
+if "quick_prompt" not in st.session_state:
+    st.session_state.quick_prompt = ""
 
 # 页面配置
 st.set_page_config(
@@ -76,12 +77,15 @@ with st.sidebar:
     provider_map = {"OpenAI": "openai", "Anthropic": "anthropic", "DeepSeek": "deepseek"}
     reverse_provider_map = {"openai": "OpenAI", "anthropic": "Anthropic", "deepseek": "DeepSeek"}
     
+    current_provider_display = reverse_provider_map.get(st.session_state.model_provider, "DeepSeek")
     selected_provider = st.selectbox(
         "模型提供商",
         provider_options,
-        index=provider_options.index(reverse_provider_map.get(st.session_state.model_provider, "DeepSeek"))
+        index=provider_options.index(current_provider_display)
     )
-    st.session_state.model_provider = provider_map[selected_provider]
+    if selected_provider != current_provider_display:
+        st.session_state.model_provider = provider_map[selected_provider]
+        st.session_state.model_name = model_options[provider_map[selected_provider]][0]
     
     # 模型名称
     model_options = {
@@ -91,10 +95,13 @@ with st.sidebar:
     }
     
     available_models = model_options.get(st.session_state.model_provider, ["deepseek-chat"])
+    if st.session_state.model_name not in available_models:
+        st.session_state.model_name = available_models[0]
+    
     selected_model = st.selectbox(
         "模型名称",
         available_models,
-        index=available_models.index(st.session_state.model_name) if st.session_state.model_name in available_models else 0
+        index=available_models.index(st.session_state.model_name)
     )
     st.session_state.model_name = selected_model
     
@@ -126,11 +133,10 @@ with st.sidebar:
     with col1:
         if st.button("清空对话"):
             st.session_state.messages = []
-            st.rerun()
     
     with col2:
         if st.button("刷新页面"):
-            st.rerun()
+            st.session_state.clear()
     
     st.divider()
     
@@ -167,7 +173,12 @@ for message in st.session_state.messages:
             st.markdown(message["content"])
 
 # 用户输入
-prompt = st.chat_input("输入消息，与谷雨对话...")
+initial_value = st.session_state.quick_prompt if st.session_state.quick_prompt else ""
+prompt = st.chat_input("输入消息，与谷雨对话...", value=initial_value)
+
+# 清除quick_prompt
+if st.session_state.quick_prompt:
+    st.session_state.quick_prompt = ""
 
 # 处理用户输入
 if prompt:
@@ -200,14 +211,7 @@ if prompt:
         
         # 添加AI响应到历史
         st.session_state.messages.append({"role": "assistant", "content": full_response})
-        
-        # 重新运行以更新界面
-        st.rerun()
 
 # 页脚
 st.divider()
-st.markdown("""
-    <div style="text-align: center; color: #666; font-size: 14px;">
-        🌱 谷雨 · Powered by LangChain · LangServe · Streamlit
-    </div>
-""", unsafe_allow_html=True)
+st.markdown("🌱 谷雨 · Powered by LangChain · LangServe · Streamlit", unsafe_allow_html=False)

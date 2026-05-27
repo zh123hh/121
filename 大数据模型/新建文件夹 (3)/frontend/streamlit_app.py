@@ -15,35 +15,18 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# 自定义CSS样式 - 优雅白色系配色
+# 自定义CSS样式 - 极简版，避免DOM操作错误
 st.markdown("""
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-    
     .stApp {
         background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e8eef5 100%);
-        min-height: 100vh;
-    }
-    
-    .main-container {
-        padding: 30px;
-        max-width: 1200px;
-        margin: 0 auto;
     }
     
     .message-container {
         background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(10px);
         border-radius: 25px;
         padding: 25px;
         box-shadow: 0 15px 50px rgba(0, 0, 0, 0.06);
-        min-height: auto;
-        max-height: 550px;
-        overflow-y: auto;
         border: 1px solid rgba(0, 0, 0, 0.04);
     }
     
@@ -54,15 +37,7 @@ st.markdown("""
         border-radius: 25px 25px 8px 25px;
         margin-bottom: 15px;
         max-width: 75%;
-        float: right;
-        clear: both;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-        transition: all 0.3s ease;
-    }
-    
-    .user-message:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        margin-left: auto;
     }
     
     .assistant-message {
@@ -72,200 +47,48 @@ st.markdown("""
         border-radius: 25px 25px 25px 8px;
         margin-bottom: 15px;
         max-width: 75%;
-        float: left;
-        clear: both;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        transition: all 0.3s ease;
-    }
-    
-    .assistant-message:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
     }
     
     .stTextInput>div>div>input {
         border-radius: 30px;
         padding: 18px 25px;
         border: 1px solid rgba(0, 0, 0, 0.08);
-        transition: all 0.4s ease;
         background: rgba(255, 255, 255, 0.98);
-        font-size: 16px;
-        color: #2d3748;
-    }
-    
-    .stTextInput>div>div>input::placeholder {
-        color: rgba(45, 55, 72, 0.6);
-    }
-    
-    .stTextInput>div>div>input:focus {
-        border-color: rgba(45, 55, 72, 0.3);
-        box-shadow: 0 0 0 3px rgba(45, 55, 72, 0.06), 0 0 40px rgba(45, 55, 72, 0.03);
-        background: rgba(255, 255, 255, 0.99);
     }
     
     .stButton>button {
         border-radius: 30px;
         padding: 15px 35px;
-        font-weight: 500;
-        font-size: 16px;
-        transition: all 0.4s ease;
         background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
         color: #f7fafc;
         border: none;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-    }
-    
-    .stButton>button:hover {
-        transform: translateY(-3px) scale(1.02);
-        box-shadow: 0 15px 45px rgba(0, 0, 0, 0.18);
-        background: linear-gradient(135deg, #3d4a5c 0%, #2a303c 100%);
-    }
-    
-    .stButton>button:active {
-        transform: translateY(-1px);
-    }
-    
-    .stSlider>div>div>div>div {
-        background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-        border-radius: 10px;
-    }
-    
-    .stSlider>div>div>div>div:nth-child(2) {
-        background: #ffffff;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
     }
     
     [data-testid="stSidebar"] {
         background: #ffffff !important;
-        backdrop-filter: blur(10px);
-        border-right: 1px solid rgba(0, 0, 0, 0.04);
-        color: #2d3748 !important;
     }
     
-    [data-testid="stSidebar"] * {
-        color: #2d3748 !important;
-        --text-color: #2d3748 !important;
-        --primary-text-color: #2d3748 !important;
-        --secondary-text-color: #4a5568 !important;
-    }
-    
-    [data-testid="stSidebar"] label {
-        color: #2d3748 !important;
-        font-weight: 600 !important;
-        font-size: 14px !important;
-        opacity: 1 !important;
-    }
-    
-    [data-testid="stSidebar"] .stMarkdown,
-    [data-testid="stSidebar"] .stSelectbox,
-    [data-testid="stSidebar"] .stSlider,
-    [data-testid="stSidebar"] .stTextArea,
-    [data-testid="stSidebar"] .stButton {
-        color: #2d3748 !important;
-        opacity: 1 !important;
-    }
-    
-    [data-testid="stSidebar"] .stSelectbox>div>div {
-        background: #f7fafc !important;
-        border-radius: 15px;
-        color: #2d3748 !important;
-        border: 1px solid rgba(0, 0, 0, 0.06);
-        opacity: 1 !important;
-    }
-    
-    /* 侧边栏按钮样式 - 浅色背景 */
     [data-testid="stSidebar"] .stButton>button {
         background: #f8fafc !important;
         border: 1px solid #e2e8f0 !important;
         color: #334155 !important;
         border-radius: 12px !important;
         padding: 12px 20px !important;
-        font-weight: 500 !important;
-        transition: all 0.2s ease !important;
-        box-shadow: none !important;
     }
     
-    [data-testid="stSidebar"] .stButton>button:hover {
-        background: #f1f5f9 !important;
-        border-color: #cbd5e0 !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
-        transform: none !important;
-    }
-    
-    [data-testid="stSidebar"] .stButton>button:active {
-        transform: scale(0.98) !important;
-    }
-    
-    [data-testid="stSidebar"] .stSelectbox>div>div>div {
-        color: #2d3748 !important;
-        opacity: 1 !important;
-    }
-    
-    [data-testid="stSidebar"] .stSelectbox>div>div>div>span {
-        color: #2d3748 !important;
-        opacity: 1 !important;
-    }
-    
-    [data-testid="stSidebar"] .stTextArea>div>textarea {
+    [data-testid="stSidebar"] .stSelectbox>div>div {
         background: #f7fafc !important;
         border-radius: 15px;
-        color: #2d3748 !important;
         border: 1px solid rgba(0, 0, 0, 0.06);
-    }
-    
-    [data-testid="stSidebar"] .css-1x8cf1d,
-    [data-testid="stSidebar"] .css-1cpxqw2,
-    [data-testid="stSidebar"] .css-1p3m7a8,
-    [data-testid="stSidebar"] .css-1y4p8pa {
-        color: #2d3748 !important;
-        opacity: 1 !important;
-    }
-    
-    [data-testid="stSidebar"] [role="listbox"] {
-        background: #ffffff !important;
-        border: 1px solid rgba(0, 0, 0, 0.08) !important;
-        border-radius: 12px !important;
-    }
-    
-    [data-testid="stSidebar"] [role="option"] {
-        color: #2d3748 !important;
-        background: #ffffff !important;
-        padding: 10px 15px !important;
-        opacity: 1 !important;
-    }
-    
-    [data-testid="stSidebar"] [role="option"]:hover {
-        background: #f7fafc !important;
-        color: #2d3748 !important;
-    }
-    
-    [data-testid="stSidebar"] [role="option"] span {
-        color: #2d3748 !important;
-        opacity: 1 !important;
     }
     
     .card {
         background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(10px);
         border-radius: 20px;
         padding: 25px;
         box-shadow: 0 15px 45px rgba(0, 0, 0, 0.04);
         margin-bottom: 25px;
         border: 1px solid rgba(0, 0, 0, 0.04);
-        transition: all 0.3s ease;
-    }
-    
-    .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.06);
-    }
-    
-    .gradient-text {
-        background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #4a5568 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
     }
     
     .status-online {
@@ -273,8 +96,6 @@ st.markdown("""
         width: 14px;
         height: 14px;
         border-radius: 50%;
-        animation: pulse 2s ease-in-out infinite;
-        box-shadow: 0 0 15px rgba(72, 187, 120, 0.4);
     }
     
     .status-offline {
@@ -282,70 +103,6 @@ st.markdown("""
         width: 14px;
         height: 14px;
         border-radius: 50%;
-        box-shadow: 0 0 10px rgba(245, 101, 101, 0.3);
-    }
-    
-    @keyframes pulse {
-        0% { 
-            box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.5);
-            transform: scale(1);
-        }
-        50% {
-            transform: scale(1.1);
-        }
-        70% { 
-            box-shadow: 0 0 0 10px rgba(72, 187, 120, 0);
-            transform: scale(1);
-        }
-        100% { 
-            box-shadow: 0 0 0 0 rgba(72, 187, 120, 0);
-            transform: scale(1);
-        }
-    }
-    
-    .stSelectbox>div>div {
-        border-radius: 15px;
-        padding: 12px 15px;
-        border: 1px solid rgba(0, 0, 0, 0.06);
-        transition: all 0.3s ease;
-        background: rgba(255, 255, 255, 0.98);
-        color: #2d3748;
-    }
-    
-    .stSelectbox>div>div:hover {
-        border-color: rgba(45, 55, 72, 0.2);
-        box-shadow: 0 0 20px rgba(45, 55, 72, 0.06);
-    }
-    
-    .stTextArea>div>textarea {
-        border-radius: 15px;
-        padding: 15px;
-        border: 1px solid rgba(0, 0, 0, 0.06);
-        transition: all 0.3s ease;
-        resize: none;
-        background: rgba(255, 255, 255, 0.98);
-        color: #2d3748;
-    }
-    
-    .stTextArea>div>textarea:focus {
-        border-color: rgba(45, 55, 72, 0.2);
-        box-shadow: 0 0 0 3px rgba(45, 55, 72, 0.04);
-    }
-    
-    [data-testid="stSwitch"] {
-        background: rgba(237, 242, 247, 0.9);
-        border-radius: 20px;
-    }
-    
-    [data-testid="stSwitch"] [role="switch"] {
-        background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    
-    [data-testid="stHorizontalRule"] {
-        border: none;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.06), transparent);
     }
     
     .welcome-card {
@@ -355,49 +112,6 @@ st.markdown("""
         padding: 35px;
         text-align: center;
         margin-bottom: 25px;
-        animation: fadeInUp 0.6s ease-out;
-    }
-    
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .footer-links a {
-        color: rgba(45, 55, 72, 0.6);
-        text-decoration: none;
-        transition: all 0.3s ease;
-        padding: 10px 20px;
-        border-radius: 25px;
-    }
-    
-    .footer-links a:hover {
-        color: #1a202c;
-        background: rgba(45, 55, 72, 0.06);
-    }
-    
-    ::-webkit-scrollbar {
-        width: 6px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.02);
-        border-radius: 10px;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
-        border-radius: 10px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
     }
 </style>
 """, unsafe_allow_html=True)
